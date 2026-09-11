@@ -1,0 +1,11 @@
+# Build context for web.Dockerfile (repo root). Keep private docs, secrets and the backend out.
+.git
+node_modules
+dist
+docs
+backend
+.env
+.env.*
+*.log
+.vscode
+.idea

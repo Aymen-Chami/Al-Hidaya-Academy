@@ -1,0 +1,55 @@
+[project]
+name = "alhidaya-backend"
+version = "0.1.0"
+description = "API for the Al Hidayah Academy Sunday School sign-up system"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "aiosmtplib>=5.1.3",
+    "alembic>=1.19.2",
+    "asyncpg>=0.31.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.141.1",
+    "pwdlib[argon2]>=0.3.1",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy[asyncio]>=2.0.52",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.7",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S", "SIM", "RUF"]
+ignore = [
+    "S101",   # assert is fine in tests
+    "B008",   # FastAPI Depends/Query in defaults
+    "RUF001", # allow unicode punctuation in user-facing strings
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S107", "S311"]
+"app/cli.py" = ["T201"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+markers = ["slow: long-running randomized tests"]
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
