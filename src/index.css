@@ -1,111 +1,239 @@
+/* ==========================================================================
+   Design tokens
+   Everything themeable lives here — palette, type, spacing, radii, shadows,
+   motion. Component styles (App.css) only reference these variables.
+   ========================================================================== */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* --- Canvas: one off-white background for the whole page --------------- */
+  --color-panel: #f4f4f7;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Background texture: 8-pointed star (khatam) star-and-cross lattice, built
+     from two squares at 45°, line art only. Keep opacity within 0.03–0.05 so it
+     stays a texture, never decoration. */
+  --pattern-color: var(--color-indigo);
+  --pattern-opacity: 0.04;
+  --pattern-size: clamp(56px, 3.5vw + 36px, 88px);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Period card "skies" (weather-app style). Gradient stops run top → bottom; each card
+     also gets a tinted scrim behind its text so white type stays WCAG AA even on the
+     brightest stops. Retune here — the cards read these through [data-period]. */
+  --sky-dawn: #f8cb70 0%, #f3a88a 46%, #8b90e2 100%;
+  --sky-dawn-scrim: rgb(74 42 122 / 0.72);
+  --sky-noon: #f7b53d 0%, #fb8f4a 45%, #f26a55 100%;
+  --sky-noon-scrim: rgb(150 30 26 / 0.72);
+  --sky-dusk: #4a78d8 0%, #b46fb8 52%, #f28a5f 100%;
+  --sky-dusk-scrim: rgb(80 26 72 / 0.66);
+  --sky-night: #353b9c 0%, #20236a 55%, #121331 100%;
+  --sky-night-scrim: rgb(6 6 26 / 0.3);
+  --sky-art-stroke: 1.6; /* px, constant at every size (non-scaling stroke) */
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --color-card: #ffffff;
+  --color-surface-2: #f7f7fb; /* cards nested inside white cards */
+  --color-surface-3: #ededf4; /* tracks, skeletons, sunken bits */
+
+  /* --- Ink ---------------------------------------------------------------- */
+  --color-ink: #111118;
+  --color-ink-muted: #55556a;
+  /* A touch darker than before so hint text stays AA (≥4.5:1) even where it
+     crosses a pattern line at full pattern opacity. */
+  --color-ink-subtle: #66667a;
+  --color-placeholder: #8e8ea0;
+  --color-line: #e4e4ec;
+  --color-line-strong: #d3d3de;
+
+  /* --- Accent: pink CTA (the strong shade keeps white text AA-legible) ---- */
+  --color-accent: #f2557d;
+  --color-accent-strong: #d6335f;
+  --color-accent-hover: #c02a53;
+  --color-accent-soft: #ffe4eb;
+
+  /* --- Secondary accents --------------------------------------------------- */
+  --color-indigo: #5b6be0;
+  --color-indigo-strong: #4452c9;
+  --color-indigo-soft: #e6e9fc;
+  --color-orange: #ff9f1c;
+  --color-orange-soft: #fff1dc;
+  --color-blue: #2f9bea;
+  --color-blue-soft: #e1f1fd;
+  --color-amber: #ffb020;
+  --color-amber-ink: #3a2500;
+
+  /* --- Status -------------------------------------------------------------- */
+  --color-success: #0f7a4a;
+  --color-success-soft: #ddf5e8;
+  --color-success-line: #b5e6cb;
+  --color-warning: #8a5300;
+  --color-warning-soft: #fff1d6;
+  --color-warning-line: #f6d9a0;
+  --color-danger: #c62f3a;
+  --color-danger-soft: #fde7e9;
+  --color-danger-line: #f4c3c8;
+
+  --color-gold: #d39b1e;
+  --color-silver: #8e959c;
+  --color-bronze: #b07a3e;
+
+  --color-focus: var(--color-indigo);
+
+  /* --- Typography ---------------------------------------------------------- */
+  --font-display: "Montserrat", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-md: 1.125rem; /* 18px */
+  --text-lg: 1.375rem; /* 22px */
+  --text-xl: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+  --text-hero: clamp(2.5rem, 1.3rem + 4.6vw, 4.75rem);
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+
+  /* --- Spacing (4px base) -------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --page-max: 1440px; /* content width; the background always runs edge to edge */
+  --panel-pad: clamp(1.125rem, 4vw, 4.5rem);
+  --grid-gap: clamp(1rem, 2vw, 1.75rem);
+
+  /* --- Radii --------------------------------------------------------------- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* --- Shadows (cool, indigo-tinted to sit on the periwinkle palette) ------ */
+  --shadow-sm: 0 1px 2px rgb(30 34 80 / 0.05), 0 4px 12px -4px rgb(30 34 80 / 0.08);
+  --shadow-md: 0 2px 4px rgb(30 34 80 / 0.04), 0 14px 30px -12px rgb(30 34 80 / 0.18);
+  --shadow-lg: 0 4px 10px rgb(30 34 80 / 0.05), 0 26px 50px -18px rgb(30 34 80 / 0.28);
+  --shadow-cta: 0 10px 22px -10px rgb(214 51 95 / 0.65);
+  --shadow-cta-hover: 0 16px 28px -12px rgb(214 51 95 / 0.7);
+  --ring: 0 0 0 3px rgb(91 107 224 / 0.3);
+  --ring-danger: 0 0 0 3px rgb(198 47 58 / 0.18);
+
+  /* --- Motion -------------------------------------------------------------- */
+  --lift-card: -6px;
+  --lift-inner: -4px;
+  --lift-btn: -2px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 190ms;
+  --duration-slow: 380ms;
+
+  --z-raised: 10;
+  --z-popover: 30;
+  --z-toast: 50;
+
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ==========================================================================
+   Base / reset
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100svh;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  background: var(--color-panel);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: 1126px;
+img {
+  display: block;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
 }
 
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl,
+dd,
+figure {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -4,7 +4,7 @@ Sunday School class sign-up system for Al Hidayah Academy.
 
 | Part | Where | Status |
 |---|---|---|
-| Frontend (React 19 + Vite) | `src/` | Prototype UI. Still uses `localStorage` and shared passcodes. |
+| Frontend (React 19 + Vite) | `src/` | Wired to the API: accounts (email code + password), family sign-up with per-child status, teacher claims, class management, Principal approval queue, people admin. |
 | Backend (FastAPI + PostgreSQL) | `backend/` | Accounts, roles (family / teacher / management / principal), server-enforced seats and waitlists, approval workflow, email. See [backend/README.md](backend/README.md). |
 | Docker | `docker-compose.yml`, `docker-compose.override.yml`, `backend/Dockerfile`, `web.Dockerfile`, `nginx/` | Dev stack (API with hot reload + Postgres + Mailpit) and a production-like stack (nginx serving the React build and proxying `/api`). |
 
@@ -23,9 +23,24 @@ Production-like (nginx + React build + API, no dev overrides):
 docker compose -f docker-compose.yml up -d --build  # http://localhost:8080
 ```
 
-Next step: wire the React UI to the API. That means replacing the `window.storage` shim and the
-passcode panel with the account and enrollment endpoints, and adding the Principal's approval
-dashboard.
+Demo accounts after `seed` (password `Password123!`): `principal@example.com`, `manager@example.com`,
+`teacher1@example.com`, `family1@example.com` (more in `backend/README.md`). Sign-up and password-reset
+codes are emailed; in development they land in Mailpit at http://localhost:8025.
+
+## Frontend structure
+
+| Where | What |
+|---|---|
+| `src/api/client.js` | `fetch` wrapper: same-origin `/api/v1`, cookie session, throws `ApiError` with the server's message. |
+| `src/api/endpoints.js` | One function per backend endpoint, grouped by audience (auth, catalog, family, teacher, admin). |
+| `src/auth/` | Session state (`GET /auth/me`), login/logout, role helpers. A 401 anywhere drops back to logged-out. |
+| `src/lib/hooks.js` | `useResource` (load + poll while the tab is visible), `useAction` (busy state + toast + refresh), hash router. |
+| `src/ClassSignupApp.jsx` | App shell: routes, role-aware nav, account menu, toasts. |
+| `src/views/` | One file per screen: sign-up sheet, auth, my children, teacher, classes, approvals, people, schedule. |
+| `src/components/ui.jsx` | Presentational pieces (period cards, empty/error/loading states, pills, confirm strip…). |
+
+Routes are hash-based (`#/manage`, `#/approvals`, …) so refreshes and deep links work with the
+nginx SPA fallback. Every business rule stays on the server; the UI only reflects its state.
 
 ---
 
