@@ -29,6 +29,7 @@ docs/
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Python
 __pycache__/
@@ -38,3 +39,7 @@ __pycache__/
 .ruff_cache/
 
 conversations/
+
+# Database dumps from scripts/backup-db.sh
+backups/
+

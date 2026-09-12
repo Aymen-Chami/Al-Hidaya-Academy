@@ -1,0 +1,36 @@
+# HTTPS for the production stack. Use together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Set PUBLIC_DOMAIN in .env once DNS points at this machine; Caddy then obtains and renews a
+# Let's Encrypt certificate on its own. Ports 80 and 443 must be reachable from the internet
+# (Let's Encrypt validates over port 80).
+services:
+  # Caddy is the only thing the internet talks to; nginx moves to localhost.
+  web:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2.10-alpine
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data          # certificates and ACME account — losing this re-issues certs
+      - caddy_config:/config
+    environment:
+      # Empty -> Caddy listens on plain :80. A hostname -> automatic HTTPS for it.
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"            # HTTP/3
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  caddy_data:
+  caddy_config:

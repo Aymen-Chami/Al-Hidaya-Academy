@@ -7,6 +7,8 @@ seed [--password P]
     Load demo users, children and classes (development only).
 check-invariants
     Verify the enrollment invariants; exits 1 if any are violated.
+send-test-email --to E
+    Send one email through the configured backend, to check SMTP settings.
 """
 
 import argparse
@@ -23,6 +25,7 @@ from app.models.enums import Period, Role
 from app.services.engine import classes, enrollments, people, waitlist
 from app.services.engine.invariants import check_invariants
 from app.services.engine.tx import SYSTEM, Actor, engine_tx
+from app.services.notify.backends import get_backend
 from app.services.notify.worker import OutboxWorker
 
 
@@ -146,6 +149,25 @@ async def invariants() -> int:
     return 0
 
 
+async def send_test_email(to: str) -> int:
+    s = get_settings()
+    print(
+        f"backend={s.email_backend} host={s.smtp_host}:{s.smtp_port} "
+        f"starttls={s.smtp_starttls} tls={s.smtp_use_tls} user={s.smtp_username or '(none)'}"
+    )
+    try:
+        await get_backend().send(
+            to.strip(),
+            "Al Hidayah Academy — SMTP test",
+            "This is a test message. If you are reading it, outgoing email works.",
+        )
+    except Exception as exc:  # report whatever the relay said, however it failed
+        print(f"FAILED: {type(exc).__name__}: {exc}")
+        return 1
+    print(f"Sent to {to}. Check the inbox (and the spam folder).")
+    return 0
+
+
 async def _run(coro) -> int:
     try:
         return await coro
@@ -165,12 +187,16 @@ def main(argv: list[str] | None = None) -> int:
     sp = sub.add_parser("seed", help="load demo data (development only)")
     sp.add_argument("--password", default="Password123!")
     sub.add_parser("check-invariants", help="verify enrollment invariants")
+    te = sub.add_parser("send-test-email", help="send one email to check SMTP settings")
+    te.add_argument("--to", required=True)
     args = parser.parse_args(argv)
 
     if args.command == "bootstrap-principal":
         coro = bootstrap_principal(args.email, args.first_name, args.last_name)
     elif args.command == "seed":
         coro = seed(args.password)
+    elif args.command == "send-test-email":
+        coro = send_test_email(args.to)
     else:
         coro = invariants()
     return asyncio.run(_run(coro))

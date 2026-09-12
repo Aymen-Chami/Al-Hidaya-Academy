@@ -3,7 +3,16 @@
 #   docker compose -f docker-compose.yml up -d --build
 name: alhidaya
 
+# Docker's default json-file driver grows without limit; on a small server that eventually
+# fills the disk and takes the database down with it.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 x-api: &api
+  logging: *logging
   build:
     context: ./backend
     target: prod
@@ -15,6 +24,7 @@ x-api: &api
 services:
   db:
     image: postgres:17-alpine
+    logging: *logging
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-alhidaya}
       POSTGRES_USER: ${POSTGRES_USER:-alhidaya}
@@ -50,6 +60,7 @@ services:
       context: .
       dockerfile: web.Dockerfile
     image: alhidaya-web:latest
+    logging: *logging
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:

@@ -6,7 +6,7 @@ Sunday School class sign-up system for Al Hidayah Academy.
 |---|---|---|
 | Frontend (React 19 + Vite) | `src/` | Wired to the API: accounts (email code + password), family sign-up with per-child status, teacher claims, class management, Principal approval queue, people admin. |
 | Backend (FastAPI + PostgreSQL) | `backend/` | Accounts, roles (family / teacher / management / principal), server-enforced seats and waitlists, approval workflow, email. See [backend/README.md](backend/README.md). |
-| Docker | `docker-compose.yml`, `docker-compose.override.yml`, `backend/Dockerfile`, `web.Dockerfile`, `nginx/` | Dev stack (API with hot reload + Postgres + Mailpit) and a production-like stack (nginx serving the React build and proxying `/api`). |
+| Docker | `docker-compose.yml`, `docker-compose.override.yml`, `docker-compose.tls.yml`, `backend/Dockerfile`, `web.Dockerfile`, `nginx/`, `caddy/` | Dev stack (API with hot reload + Postgres + Mailpit) and a production stack (Caddy for HTTPS → nginx serving the React build → API → Postgres). |
 
 ## Quick start
 
@@ -17,7 +17,7 @@ docker compose exec api python -m app.cli seed      # optional demo data (passwo
 npm install && npm run dev                          # frontend on :5173 (proxies /api to the API)
 ```
 
-Production-like (nginx + React build + API, no dev overrides):
+Production-like on your machine (nginx + React build + API, no dev overrides, no TLS):
 
 ```bash
 docker compose -f docker-compose.yml up -d --build  # http://localhost:8080
@@ -26,6 +26,23 @@ docker compose -f docker-compose.yml up -d --build  # http://localhost:8080
 Demo accounts after `seed` (password `Password123!`): `principal@example.com`, `manager@example.com`,
 `teacher1@example.com`, `family1@example.com` (more in `backend/README.md`). Sign-up and password-reset
 codes are emailed; in development they land in Mailpit at http://localhost:8025.
+
+## Production
+
+Caddy terminates HTTPS in front of nginx and renews the certificate itself:
+
+```bash
+cp .env.production.example .env   # secrets, PUBLIC_DOMAIN, SMTP relay
+docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+```
+
+```
+internet ──443──> caddy ──> web (nginx) ──> api (FastAPI) ──> db (Postgres)
+```
+
+Only Caddy is published; nginx, the API and the database stay on the internal Docker network.
+Full walkthrough for a fresh AWS box — DNS, the first Principal account, email, backups:
+**[DEPLOY.md](DEPLOY.md)**.
 
 ## Frontend structure
 

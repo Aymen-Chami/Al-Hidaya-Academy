@@ -1,0 +1,26 @@
+# TLS terminator in front of the `web` (nginx) container.
+#
+# PUBLIC_DOMAIN set   -> Caddy gets and renews a Let's Encrypt certificate automatically,
+#                        and redirects http:// to https://.
+# PUBLIC_DOMAIN unset -> plain HTTP on :80, for testing by IP before a domain exists.
+{
+	# No admin API: nothing needs it, and it shouldn't be listening inside the container.
+	admin off
+
+	# Optional: Let's Encrypt will then email you if a renewal ever fails. Caddy renews on its
+	# own, so this is a safety net, not a requirement. Uncomment and put your address in.
+	# email admin@your-domain.org
+}
+
+{$PUBLIC_DOMAIN::80} {
+	encode zstd gzip
+
+	# nginx serves the React build, adds the security headers and proxies /api to the API.
+	# Caddy sets X-Forwarded-For / -Proto / -Host, which nginx is configured to trust.
+	reverse_proxy web:80
+
+	log {
+		output stdout
+		format console
+	}
+}
