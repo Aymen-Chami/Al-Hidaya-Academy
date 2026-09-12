@@ -44,6 +44,12 @@ Only Caddy is published; nginx, the API and the database stay on the internal Do
 Full walkthrough for a fresh AWS box — DNS, the first Principal account, email, backups:
 **[DEPLOY.md](DEPLOY.md)**.
 
+## Documentation
+
+**[DOCUMENTATION.md](DOCUMENTATION.md)** is the complete reference: what the app does and how
+each role uses it, every rule the server enforces, architecture, data model and invariants, the
+enrollment engine, security, the API and error codes, every setting, and operations.
+
 ## Frontend structure
 
 | Where | What |
