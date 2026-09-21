@@ -33,6 +33,7 @@ import {
   PageHeader,
   PeriodCard,
   PublishBadge,
+  SearchField,
   StatusPill,
 } from "../components/ui";
 import { useAction, useDebounced, useResource } from "../lib/hooks";
@@ -42,6 +43,11 @@ import { cx } from "../lib/cx";
 const CAN_TEACH = ["teacher", "management", "principal"];
 const fetchUsers = () => adminApi.users();
 
+// Student search: matches a roster/waitlist entry by the child's name or the family's email.
+// Whole-page filter (which classes show) and per-chip highlight share this one predicate.
+const studentMatches = (entry, q) =>
+  `${entry.first_name} ${entry.last_name}`.toLowerCase().includes(q) || (entry.family?.email ?? "").toLowerCase().includes(q);
+
 export default function ManageView({ notify }) {
   const { user } = useAuth();
   const classesRes = useResource(adminApi.classes, { interval: 10000 });
@@ -50,6 +56,9 @@ export default function ManageView({ notify }) {
   const [collapsed, setCollapsed] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [query, setQuery] = useState("");
+  const q = useDebounced(query.trim().toLowerCase(), 200);
+  const searchId = useId();
   const principal = isPrincipal(user);
 
   if (classesRes.loading) return <LoadingState label="Loading classes…" />;
@@ -63,6 +72,11 @@ export default function ManageView({ notify }) {
   const seatsHeld = classes.reduce((n, c) => n + c.seats_taken, 0);
   const pendingCount = classes.reduce((n, c) => n + c.roster.filter((r) => r.status === "pending").length, 0);
   const waitlistCount = classes.reduce((n, c) => n + c.waitlist_count, 0);
+
+  // While searching, only classes holding a matching student (enrolled or waitlisted) are shown.
+  const searching = q.length > 0;
+  const visible = searching ? classes.filter((c) => [...c.roster, ...c.waitlist].some((e) => studentMatches(e, q))) : classes;
+  const matchCount = searching ? visible.reduce((n, c) => n + [...c.roster, ...c.waitlist].filter((e) => studentMatches(e, q)).length, 0) : 0;
 
   return (
     <div className="page">
@@ -104,21 +118,39 @@ export default function ManageView({ notify }) {
       </section>
 
       <div className="section-heading">
-        <h2 className="section-heading__title">Classes on the sheet ({classes.length})</h2>
-        {draftCount > 0 && <span className="section-heading__meta">{plural(draftCount, "draft")} not visible to families</span>}
+        <h2 className="section-heading__title">
+          {searching ? `${plural(matchCount, "match", "es")} in ${plural(visible.length, "class", "es")}` : `Classes on the sheet (${classes.length})`}
+        </h2>
+        {!searching && draftCount > 0 && <span className="section-heading__meta">{plural(draftCount, "draft")} not visible to families</span>}
+        {classes.length > 0 && (
+          <SearchField
+            id={searchId}
+            query={query}
+            setQuery={setQuery}
+            compact
+            label="Find a student"
+            placeholder="Find a student — name or family email"
+          />
+        )}
       </div>
       {classes.length === 0 && (
         <EmptyState icon={NotebookPen} title="No classes yet — add the first one above.">
           It'll appear on the sign-up sheet as soon as you save it.
         </EmptyState>
       )}
+      {searching && visible.length === 0 && (
+        <EmptyState icon={Search} title={`No student matches “${query.trim()}”`}>
+          Search checks every roster and waitlist by the child's name or the family's email.
+        </EmptyState>
+      )}
 
       <div className="period-grid">
         {PERIODS.map((period, i) => {
           // Server order: drafts first, then published, each by sort order.
-          const items = classes.filter((c) => c.period === period);
+          const items = visible.filter((c) => c.period === period);
           const drafts = items.filter((c) => !c.published).length;
-          const siblings = (c) => items.filter((x) => x.published === c.published);
+          // Move up/down is relative to the full sheet, not the filtered view.
+          const siblings = (c) => classes.filter((x) => x.period === period && x.published === c.published);
           return (
             <PeriodCard
               key={period}
@@ -127,7 +159,7 @@ export default function ManageView({ notify }) {
               title={periodLabel(period)}
               summary={plural(items.length, "class", "es")}
               empty={items.length === 0}
-              collapsed={!!collapsed[period]}
+              collapsed={searching ? false : !!collapsed[period]}
               onToggle={() => setCollapsed((prev) => ({ ...prev, [period]: !prev[period] }))}
               badges={
                 drafts > 0 && (
@@ -139,9 +171,13 @@ export default function ManageView({ notify }) {
               }
             >
               {items.length === 0 ? (
-                <EmptyState size="compact" icon={NotebookPen} title="No classes in this period yet.">
-                  Use the form above to add one.
-                </EmptyState>
+                searching ? (
+                  <EmptyState size="compact" icon={Search} title="No matching students in this period." />
+                ) : (
+                  <EmptyState size="compact" icon={NotebookPen} title="No classes in this period yet.">
+                    Use the form above to add one.
+                  </EmptyState>
+                )
               ) : (
                 <ul className="class-list">
                   {items.map((c) => {
@@ -174,6 +210,7 @@ export default function ManageView({ notify }) {
                         run={run}
                         reload={reload}
                         principal={principal}
+                        highlight={searching ? q : null}
                         confirmingDelete={confirmDeleteId === c.id}
                         setConfirmDelete={(on) => setConfirmDeleteId(on ? c.id : null)}
                         onEdit={() => {
@@ -279,9 +316,11 @@ function ClassForm({ teachers, initial, onSubmit, onCancel, busy, submitLabel })
   );
 }
 
-function AdminClassCard({ cls: c, canUp, canDown, busy, run, reload, principal, confirmingDelete, setConfirmDelete, onEdit }) {
+function AdminClassCard({ cls: c, canUp, canDown, busy, run, reload, principal, highlight, confirmingDelete, setConfirmDelete, onEdit }) {
   const move = (direction) => run(`move-${c.id}`, () => adminApi.moveClass(c.id, direction), { after: reload });
   const heldBy = c.roster.length;
+  // With a search active: ring the matching chips, fade the rest so the eye lands on the match.
+  const matchClass = (entry) => (highlight ? (studentMatches(entry, highlight) ? "chip--match" : "chip--dim") : undefined);
 
   return (
     <li className={cx("admin-card", !c.published && "admin-card--draft")}>
@@ -379,6 +418,7 @@ function AdminClassCard({ cls: c, canUp, canDown, busy, run, reload, principal, 
                   <li key={r.enrollment_id} className="roster__entry">
                     <Chip
                       label={`${r.first_name} ${r.last_name}`}
+                      className={matchClass(r)}
                       tone={r.status === "pending" ? "pending" : undefined}
                       title={r.family ? `${fullName(r.family)} · ${r.family.email}${r.family.phone ? ` · ${r.family.phone}` : ""}` : "Walk-in (no family account)"}
                       busy={busy === `kick-${r.enrollment_id}`}
@@ -434,6 +474,7 @@ function AdminClassCard({ cls: c, canUp, canDown, busy, run, reload, principal, 
                   <li key={w.entry_id}>
                     <Chip
                       tone="waitlist"
+                      className={matchClass(w)}
                       label={`#${w.position} ${w.first_name} ${w.last_name}${w.priority ? " • " + priorityText(w.priority) : ""}`}
                       title={w.family ? `${fullName(w.family)} · ${w.family.email}` : undefined}
                       removeLabel={`Remove ${w.first_name} ${w.last_name} from the waitlist`}

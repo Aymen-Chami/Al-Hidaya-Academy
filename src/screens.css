@@ -706,6 +706,12 @@
   margin-bottom: var(--space-5);
 }
 
+/* Student search on the Classes page sits in the section heading, right-aligned. */
+.section-heading .field--search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
 .queue-toolbar__bulk {
   display: flex;
   flex-wrap: wrap;

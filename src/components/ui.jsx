@@ -359,9 +359,9 @@ export function PublishBadge({ published }) {
   );
 }
 
-export function Chip({ label, onRemove, removeLabel, tone, busy, title }) {
+export function Chip({ label, onRemove, removeLabel, tone, busy, title, className }) {
   return (
-    <span className={cx("chip", !onRemove && "chip--static", tone && `chip--${tone}`)} title={title}>
+    <span className={cx("chip", !onRemove && "chip--static", tone && `chip--${tone}`, className)} title={title}>
       {label}
       {onRemove && (
         <button
